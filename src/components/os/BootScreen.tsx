@@ -1,31 +1,27 @@
 import { useEffect, useState } from "react";
-
-const LINES = [
-  "GioOS BIOS v1.0 — (c) Giovana Costa",
-  "Verificando memória ........ 640K OK",
-  "Carregando cafe.sys ........ OK",
-  "Compilando criatividade .... OK",
-  "Iniciando área de trabalho...",
-];
+import { useT } from "@/lib/i18n";
 
 export function BootScreen({ onDone }: { onDone: () => void }) {
+  const t = useT();
+  const LINES = t.bootLines;
+  const total = LINES.length;
   const [count, setCount] = useState(0);
 
   useEffect(() => {
-    const step = setInterval(() => setCount((c) => Math.min(c + 1, LINES.length)), 380);
+    const step = setInterval(() => setCount((c) => Math.min(c + 1, total)), 380);
     const done = setTimeout(onDone, 2600);
     return () => {
       clearInterval(step);
       clearTimeout(done);
     };
-  }, [onDone]);
+  }, [onDone, total]);
 
   return (
     <button
       type="button"
       onClick={onDone}
       className="os-terminal fixed inset-0 z-[10000] flex cursor-pointer flex-col justify-between p-6 text-left text-xl sm:p-10 sm:text-2xl"
-      aria-label="Pular inicialização"
+      aria-label={t.skipBoot}
     >
       <div className="space-y-1">
         {LINES.slice(0, count).map((l) => (
@@ -38,7 +34,7 @@ export function BootScreen({ onDone }: { onDone: () => void }) {
         <div className="h-5 border-2 border-terminal-foreground p-0.5">
           <div className="h-full animate-boot-bar bg-terminal-foreground" />
         </div>
-        <p className="text-base text-terminal-dim">clique para pular</p>
+        <p className="text-base text-terminal-dim">{t.clickToSkip}</p>
       </div>
     </button>
   );

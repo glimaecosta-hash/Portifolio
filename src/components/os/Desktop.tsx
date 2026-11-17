@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { owner } from "@/data/portfolio";
+import { useLang, usePortfolio, useT } from "@/lib/i18n";
+import { HTML_LANG, LANGS, type Lang } from "@/lib/lang";
 import { cn } from "@/lib/utils";
-import { APPS, DESKTOP_ORDER, getWindowMeta, isBaseApp, type WindowId } from "./app-registry";
+import { APPS, DESKTOP_ORDER, getAppText, getWindowMeta, type WindowId } from "./app-registry";
 import {
   AboutApp,
   ContatoApp,
@@ -32,12 +33,12 @@ function useIsSmall() {
   return small;
 }
 
-function useClock() {
+function useClock(lang: Lang) {
   const [time, setTime] = useState("");
   useEffect(() => {
     const fmt = () =>
       setTime(
-        new Date().toLocaleTimeString("pt-BR", {
+        new Date().toLocaleTimeString(HTML_LANG[lang], {
           hour: "2-digit",
           minute: "2-digit",
           timeZone: "America/Sao_Paulo",
@@ -46,18 +47,44 @@ function useClock() {
     fmt();
     const t = setInterval(fmt, 15000);
     return () => clearInterval(t);
-  }, []);
+  }, [lang]);
   return time;
 }
 
+function LanguageToggle() {
+  const { lang, setLang } = useLang();
+  const t = useT();
+  return (
+    <div role="group" aria-label={t.language} className="flex shrink-0">
+      {LANGS.map((l) => (
+        <OsButton
+          key={l}
+          size="sm"
+          variant={lang === l ? "pressed" : "default"}
+          aria-pressed={lang === l}
+          aria-label={t.languageNames[l]}
+          title={t.languageNames[l]}
+          lang={HTML_LANG[l]}
+          onClick={() => setLang(l)}
+        >
+          {l.toUpperCase()}
+        </OsButton>
+      ))}
+    </div>
+  );
+}
+
 export function Desktop() {
+  const { lang } = useLang();
+  const t = useT();
+  const { owner } = usePortfolio();
   const [phase, setPhase] = useState<Phase>("boot");
   const [wins, setWins] = useState<Win[]>([]);
   const [activeId, setActiveId] = useState<WindowId | null>(null);
   const [startOpen, setStartOpen] = useState(false);
   const zRef = useRef(10);
   const isSmall = useIsSmall();
-  const time = useClock();
+  const time = useClock(lang);
 
   const open = useCallback((id: WindowId) => {
     setStartOpen(false);
@@ -66,7 +93,7 @@ export function Desktop() {
       if (prev.some((w) => w.id === id))
         return prev.map((w) => (w.id === id ? { ...w, z, minimized: false } : w));
       const n = prev.length;
-      const { width } = getWindowMeta(id);
+      const width = id in APPS ? APPS[id as keyof typeof APPS].width : 600;
       const maxX = Math.max(16, window.innerWidth - width - 32);
       const x = Math.min(140 + n * 56, maxX);
       const y = Math.min(24 + n * 40, Math.max(16, window.innerHeight - 420));
@@ -133,9 +160,7 @@ export function Desktop() {
   if (phase === "off") {
     return (
       <main className="fixed inset-0 flex flex-col items-center justify-center gap-6 bg-ink p-6 text-center">
-        <p className="font-pixel text-2xl text-primary sm:text-3xl">
-          Agora é seguro desligar o computador.
-        </p>
+        <p className="font-pixel text-2xl text-primary sm:text-3xl">{t.shutdownMessage}</p>
         <OsButton
           variant="highlight"
           onClick={() => {
@@ -144,7 +169,7 @@ export function Desktop() {
             setPhase("boot");
           }}
         >
-          Ligar de novo
+          {t.turnOn}
         </OsButton>
       </main>
     );
@@ -167,7 +192,7 @@ export function Desktop() {
 
       {/* Desktop icons */}
       <nav
-        aria-label="Área de trabalho"
+        aria-label={t.desktop}
         className="absolute inset-x-2 top-3 grid grid-cols-3 gap-2 md:inset-x-auto md:bottom-16 md:left-3 md:grid-flow-col md:grid-cols-none md:auto-cols-[92px] md:grid-rows-[repeat(auto-fill,96px)]"
         onClick={() => setStartOpen(false)}
       >
@@ -183,7 +208,7 @@ export function Desktop() {
               className="transition-transform group-hover:-translate-y-0.5"
             />
             <span className="os-icon-label break-all px-1 text-center text-sm leading-tight group-focus-visible:bg-primary">
-              {APPS[id].label}
+              {getAppText(id, lang).label}
             </span>
           </button>
         ))}
@@ -191,13 +216,13 @@ export function Desktop() {
 
       {/* Sticky note */}
       <aside className="os-postit absolute bottom-20 right-6 w-56 rotate-2 p-4 md:bottom-auto md:right-8 md:top-8">
-        <p className="font-pixel text-lg">Lembrete:</p>
-        <p className="mt-1 text-sm">Disponível para novos projetos e vagas em 2026.</p>
+        <p className="font-pixel text-lg">{t.reminder}</p>
+        <p className="mt-1 text-sm">{t.reminderText}</p>
         <button
           onClick={() => open("contato")}
           className="mt-3 font-pixel text-sm underline decoration-2 underline-offset-4 hover:text-primary-deep"
         >
-          abrir contato.exe →
+          {t.openContact}
         </button>
       </aside>
 
@@ -205,7 +230,7 @@ export function Desktop() {
       {wins
         .filter((w) => !w.minimized)
         .map((w) => {
-          const meta = getWindowMeta(w.id);
+          const meta = getWindowMeta(w.id, lang);
           return (
             <OsWindow
               key={w.id}
@@ -243,7 +268,7 @@ export function Desktop() {
                   className="flex w-full items-center gap-3 px-3 py-1.5 text-left font-pixel text-sm hover:bg-primary hover:text-primary-foreground"
                 >
                   <PixelIcon name={APPS[id].icon} size={24} />
-                  {isBaseApp(id) ? APPS[id].label : id}
+                  {getAppText(id, lang).label}
                 </button>
               </li>
             ))}
@@ -259,7 +284,7 @@ export function Desktop() {
                 <span className="flex h-6 w-6 items-center justify-center border-2 border-ink bg-secondary text-xs">
                   ⏻
                 </span>
-                Desligar...
+                {t.shutdown}
               </button>
             </li>
           </ul>
@@ -275,11 +300,11 @@ export function Desktop() {
           aria-expanded={startOpen}
         >
           <StartLogo />
-          Iniciar
+          {t.start}
         </OsButton>
         <div className="flex min-w-0 flex-1 gap-1 overflow-x-auto">
           {wins.map((w) => {
-            const meta = getWindowMeta(w.id);
+            const meta = getWindowMeta(w.id, lang);
             const isActive = activeId === w.id && !w.minimized;
             return (
               <OsButton
@@ -296,6 +321,7 @@ export function Desktop() {
             );
           })}
         </div>
+        <LanguageToggle />
         <div className={cn("os-inset flex h-8 items-center px-3 font-pixel text-sm")}>{time}</div>
       </footer>
     </main>

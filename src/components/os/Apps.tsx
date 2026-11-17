@@ -1,17 +1,7 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { ExternalLink, Github, Linkedin, Mail } from "lucide-react";
-import {
-  courses,
-  education,
-  experience,
-  languages,
-  owner,
-  practices,
-  projects,
-  skills,
-  tools,
-  type Project,
-} from "@/data/portfolio";
+import type { Project, TimelineItem } from "@/data/portfolio";
+import { useLang, usePortfolio, useT } from "@/lib/i18n";
 import { runCommand } from "@/lib/terminal";
 import { PixelIcon } from "./PixelIcon";
 import { OsButton } from "./OsButton";
@@ -32,7 +22,7 @@ function MenuBar({ items }: { items: string[] }) {
   );
 }
 
-function StatusBar({ children }: { children: React.ReactNode }) {
+function StatusBar({ children }: { children: ReactNode }) {
   return (
     <div className="flex justify-between border-t-2 border-ink px-3 py-1 font-pixel text-xs text-muted-foreground">
       {children}
@@ -41,9 +31,11 @@ function StatusBar({ children }: { children: React.ReactNode }) {
 }
 
 export function AboutApp({ onOpen }: { onOpen: OpenFn }) {
+  const t = useT();
+  const { owner } = usePortfolio();
   return (
     <div className="flex h-full flex-col">
-      <MenuBar items={["Arquivo", "Editar", "Ajuda"]} />
+      <MenuBar items={t.aboutMenu} />
       <div className="os-inset m-3 flex-1 space-y-4 p-5">
         <div className="flex items-center gap-4">
           <div className="border-2 border-ink bg-accent p-1 shadow-hard-sm">
@@ -62,14 +54,14 @@ export function AboutApp({ onOpen }: { onOpen: OpenFn }) {
           </p>
         ))}
         <p className="text-sm text-muted-foreground">
-          {">"} Dica: tudo aqui é clicável. Abra as pastas, arraste as janelas e experimente o
-          terminal.exe<span className="animate-blink">_</span>
+          {">"} {t.aboutTip}
+          <span className="animate-blink">_</span>
         </p>
         <div className="flex flex-wrap gap-3 pt-1">
           <OsButton variant="primary" onClick={() => onOpen("projetos")}>
-            Ver projetos
+            {t.seeProjects}
           </OsButton>
-          <OsButton onClick={() => onOpen("contato")}>Falar comigo</OsButton>
+          <OsButton onClick={() => onOpen("contato")}>{t.talkToMe}</OsButton>
         </div>
       </div>
     </div>
@@ -77,11 +69,12 @@ export function AboutApp({ onOpen }: { onOpen: OpenFn }) {
 }
 
 function ProjectCover({ project, lazy }: { project: Project; lazy?: boolean }) {
+  const t = useT();
   if (project.image) {
     return (
       <img
         src={project.image}
-        alt={`Tela do projeto ${project.name}`}
+        alt={t.projectScreenshot(project.name)}
         width={1024}
         height={768}
         loading={lazy ? "lazy" : undefined}
@@ -97,11 +90,13 @@ function ProjectCover({ project, lazy }: { project: Project; lazy?: boolean }) {
 }
 
 export function ProjectsApp({ onOpen }: { onOpen: OpenFn }) {
+  const t = useT();
+  const { projects } = usePortfolio();
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center gap-2 border-b-2 border-ink px-3 py-2 text-sm">
-        <span className="font-pixel">Endereço</span>
-        <span className="os-inset flex-1 truncate px-2 py-0.5">C:\Giovana\Projetos</span>
+        <span className="font-pixel">{t.address}</span>
+        <span className="os-inset flex-1 truncate px-2 py-0.5">{t.projectsPath}</span>
       </div>
       <div className="os-inset m-3 grid flex-1 grid-cols-2 gap-3 p-3 sm:grid-cols-4">
         {projects.map((p) => (
@@ -120,16 +115,18 @@ export function ProjectsApp({ onOpen }: { onOpen: OpenFn }) {
         ))}
       </div>
       <StatusBar>
-        <span>{projects.length} objetos</span>
-        <span>Clique para abrir</span>
+        <span>{t.objects(projects.length)}</span>
+        <span>{t.clickToOpen}</span>
       </StatusBar>
     </div>
   );
 }
 
 export function ProjectApp({ slug }: { slug: string }) {
+  const t = useT();
+  const { projects } = usePortfolio();
   const p = projects.find((x) => x.slug === slug);
-  if (!p) return <p className="p-4">Arquivo não encontrado.</p>;
+  if (!p) return <p className="p-4">{t.fileNotFound}</p>;
   return (
     <div className="space-y-4 p-4">
       <div className="border-2 border-ink shadow-hard-sm">
@@ -148,7 +145,7 @@ export function ProjectApp({ slug }: { slug: string }) {
       ))}
       {p.activities.length > 0 && (
         <fieldset className="border-2 border-ink p-3">
-          <legend className="px-1 font-pixel text-sm">O que eu fiz</legend>
+          <legend className="px-1 font-pixel text-sm">{t.whatIDid}</legend>
           <ul className="list-inside list-['>_'] space-y-1 text-sm leading-relaxed">
             {p.activities.map((a) => (
               <li key={a}>{a}</li>
@@ -166,12 +163,12 @@ export function ProjectApp({ slug }: { slug: string }) {
       <div className="flex flex-wrap gap-3">
         {p.live && (
           <OsButton variant="primary" onClick={() => window.open(p.live, "_blank")}>
-            <ExternalLink className="h-4 w-4" /> Ver online
+            <ExternalLink className="h-4 w-4" /> {t.seeOnline}
           </OsButton>
         )}
         {p.repo && (
           <OsButton onClick={() => window.open(p.repo, "_blank")}>
-            <Github className="h-4 w-4" /> Código
+            <Github className="h-4 w-4" /> {t.code}
           </OsButton>
         )}
       </div>
@@ -180,14 +177,14 @@ export function ProjectApp({ slug }: { slug: string }) {
 }
 
 type Line = { kind: "in" | "out"; text: string };
-const WELCOME: Line[] = [
-  { kind: "out", text: "GioOS terminal [versão 1.0]" },
-  { kind: "out", text: '(c) Giovana Costa. Digite "ajuda" para ver os comandos.' },
-  { kind: "out", text: "" },
-];
 
 export function TerminalApp({ onOpen, autoFocus }: { onOpen: OpenFn; autoFocus: boolean }) {
-  const [lines, setLines] = useState<Line[]>(WELCOME);
+  const { lang } = useLang();
+  const t = useT();
+  const [lines, setLines] = useState<Line[]>(() => [
+    ...t.terminalWelcome.map((text) => ({ kind: "out" as const, text })),
+    { kind: "out", text: "" },
+  ]);
   const [value, setValue] = useState("");
   const [history, setHistory] = useState<string[]>([]);
   const [cursor, setCursor] = useState(-1);
@@ -203,7 +200,7 @@ export function TerminalApp({ onOpen, autoFocus }: { onOpen: OpenFn; autoFocus: 
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    const res = runCommand(value);
+    const res = runCommand(value, lang);
     if (res.clear) setLines([]);
     else
       setLines((l) => [
@@ -230,7 +227,7 @@ export function TerminalApp({ onOpen, autoFocus }: { onOpen: OpenFn; autoFocus: 
               {l.text}
             </>
           ) : (
-            l.text || "\u00a0"
+            l.text || " "
           )}
         </div>
       ))}
@@ -260,7 +257,7 @@ export function TerminalApp({ onOpen, autoFocus }: { onOpen: OpenFn; autoFocus: 
           autoCapitalize="off"
           spellCheck={false}
           className="min-w-0 flex-1 bg-transparent caret-terminal-foreground outline-none"
-          aria-label="Digite um comando"
+          aria-label={t.terminalInput}
         />
       </form>
       <div ref={endRef} />
@@ -268,18 +265,35 @@ export function TerminalApp({ onOpen, autoFocus }: { onOpen: OpenFn; autoFocus: 
   );
 }
 
+function TagList({ items, className }: { items: string[]; className: string }) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {items.map((item) => (
+        <span
+          key={item}
+          className={`border-2 border-ink px-2 py-0.5 font-pixel text-xs ${className}`}
+        >
+          {item}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 export function SkillsApp() {
+  const t = useT();
+  const { skills, tools, practices } = usePortfolio();
   return (
     <div className="space-y-4 p-4">
       <div className="flex items-center gap-3">
         <PixelIcon name="chip" size={40} />
         <div>
-          <p className="font-pixel text-lg">Propriedades do sistema</p>
-          <p className="text-xs text-muted-foreground">Processador: Giovana™ Full Stack Edition</p>
+          <p className="font-pixel text-lg">{t.systemProperties}</p>
+          <p className="text-xs text-muted-foreground">{t.processor}</p>
         </div>
       </div>
       <fieldset className="border-2 border-ink p-3">
-        <legend className="px-1 font-pixel text-sm">Linguagens e frameworks</legend>
+        <legend className="px-1 font-pixel text-sm">{t.languagesFrameworks}</legend>
         <ul className="space-y-2">
           {skills.map((s) => (
             <li key={s.name} className="grid grid-cols-[7.5rem_1fr] items-center gap-3 text-sm">
@@ -301,33 +315,18 @@ export function SkillsApp() {
         </ul>
       </fieldset>
       <fieldset className="border-2 border-ink p-3">
-        <legend className="px-1 font-pixel text-sm">Ferramentas do dia a dia</legend>
-        <div className="flex flex-wrap gap-2">
-          {tools.map((t) => (
-            <span key={t} className="border-2 border-ink bg-accent px-2 py-0.5 font-pixel text-xs">
-              {t}
-            </span>
-          ))}
-        </div>
+        <legend className="px-1 font-pixel text-sm">{t.dailyTools}</legend>
+        <TagList items={tools} className="bg-accent" />
       </fieldset>
       <fieldset className="border-2 border-ink p-3">
-        <legend className="px-1 font-pixel text-sm">Arquitetura e qualidade</legend>
-        <div className="flex flex-wrap gap-2">
-          {practices.map((t) => (
-            <span
-              key={t}
-              className="border-2 border-ink bg-secondary px-2 py-0.5 font-pixel text-xs"
-            >
-              {t}
-            </span>
-          ))}
-        </div>
+        <legend className="px-1 font-pixel text-sm">{t.architectureQuality}</legend>
+        <TagList items={practices} className="bg-secondary" />
       </fieldset>
     </div>
   );
 }
 
-function CvSection({ title, children }: { title: string; children: React.ReactNode }) {
+function CvSection({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="space-y-3">
       <h3 className="border-b-2 border-ink font-pixel text-lg">{title}</h3>
@@ -335,8 +334,6 @@ function CvSection({ title, children }: { title: string; children: React.ReactNo
     </section>
   );
 }
-
-type TimelineItem = { period: string; title: string; place: string; text: string };
 
 function Timeline({ items }: { items: TimelineItem[] }) {
   return (
@@ -355,10 +352,22 @@ function Timeline({ items }: { items: TimelineItem[] }) {
   );
 }
 
+function BulletList({ items }: { items: string[] }) {
+  return (
+    <ul className="list-inside list-['>_'] space-y-1 text-sm">
+      {items.map((item) => (
+        <li key={item}>{item}</li>
+      ))}
+    </ul>
+  );
+}
+
 export function CurriculoApp() {
+  const t = useT();
+  const { owner, experience, education, courses, languages } = usePortfolio();
   return (
     <div className="flex h-full flex-col">
-      <MenuBar items={["Arquivo", "Exibir", "Formatar"]} />
+      <MenuBar items={t.resumeMenu} />
       <div className="os-inset m-3 space-y-5 p-5">
         <div>
           <h2 className="font-pixel text-2xl">{owner.name}</h2>
@@ -367,25 +376,17 @@ export function CurriculoApp() {
           </p>
         </div>
         <p className="text-sm leading-relaxed">{owner.objective}</p>
-        <CvSection title="Experiência">
+        <CvSection title={t.experience}>
           <Timeline items={experience} />
         </CvSection>
-        <CvSection title="Formação">
+        <CvSection title={t.education}>
           <Timeline items={education} />
         </CvSection>
-        <CvSection title="Cursos complementares">
-          <ul className="list-inside list-['>_'] space-y-1 text-sm">
-            {courses.map((c) => (
-              <li key={c}>{c}</li>
-            ))}
-          </ul>
+        <CvSection title={t.courses}>
+          <BulletList items={courses} />
         </CvSection>
-        <CvSection title="Idiomas">
-          <ul className="list-inside list-['>_'] space-y-1 text-sm">
-            {languages.map((l) => (
-              <li key={l}>{l}</li>
-            ))}
-          </ul>
+        <CvSection title={t.spokenLanguages}>
+          <BulletList items={languages} />
         </CvSection>
       </div>
     </div>
@@ -393,43 +394,45 @@ export function CurriculoApp() {
 }
 
 export function ContatoApp() {
+  const t = useT();
+  const { owner } = usePortfolio();
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const send = (e: FormEvent) => {
     e.preventDefault();
-    const href = `mailto:${owner.email}?subject=${encodeURIComponent(subject || "Olá, Giovana!")}&body=${encodeURIComponent(message)}`;
+    const href = `mailto:${owner.email}?subject=${encodeURIComponent(subject || t.defaultSubject)}&body=${encodeURIComponent(message)}`;
     window.location.href = href;
   };
   return (
     <form onSubmit={send} className="space-y-3 p-4 text-sm">
       <div className="grid grid-cols-[4.5rem_1fr] items-center gap-2">
-        <span className="font-pixel">Para:</span>
+        <span className="font-pixel">{t.to}</span>
         <span className="os-inset truncate px-2 py-1">{owner.email}</span>
         <label htmlFor="assunto" className="font-pixel">
-          Assunto:
+          {t.subject}
         </label>
         <input
           id="assunto"
           value={subject}
           onChange={(e) => setSubject(e.target.value)}
-          placeholder="Vamos trabalhar juntas?"
+          placeholder={t.subjectPlaceholder}
           className="os-inset px-2 py-1 outline-none focus:bg-card"
         />
       </div>
       <label htmlFor="mensagem" className="sr-only">
-        Mensagem
+        {t.message}
       </label>
       <textarea
         id="mensagem"
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         rows={6}
-        placeholder="Escreva sua mensagem aqui..."
+        placeholder={t.messagePlaceholder}
         className="os-inset w-full resize-none p-2 outline-none focus:bg-card"
       />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <OsButton type="submit" variant="primary">
-          <Mail className="h-4 w-4" /> Enviar
+          <Mail className="h-4 w-4" /> {t.send}
         </OsButton>
         <div className="flex gap-2">
           <a
@@ -456,29 +459,23 @@ export function ContatoApp() {
   );
 }
 
-const TRASH = [
-  { file: "bug_de_2019.js", note: "Funcionava na minha máquina." },
-  { file: "codigo_sem_teste.ts", note: "Nunca mais." },
-  { file: "estilo_com_!important.css", note: "Momento de desespero." },
-  { file: "senha123.txt", note: "Brincadeira. Segurança em primeiro lugar." },
-];
-
 export function LixeiraApp() {
+  const t = useT();
   const [tried, setTried] = useState(false);
   return (
     <div className="space-y-3 p-4 text-sm">
       <ul className="os-inset divide-y-2 divide-dashed divide-muted">
-        {TRASH.map((t) => (
-          <li key={t.file} className="flex items-center gap-3 px-3 py-2">
+        {t.trash.map((item) => (
+          <li key={item.file} className="flex items-center gap-3 px-3 py-2">
             <PixelIcon name="doc" size={24} />
-            <span className="flex-1 font-pixel">{t.file}</span>
-            <span className="text-xs text-muted-foreground">{t.note}</span>
+            <span className="flex-1 font-pixel">{item.file}</span>
+            <span className="text-xs text-muted-foreground">{item.note}</span>
           </li>
         ))}
       </ul>
       <div className="flex items-center gap-3">
-        <OsButton onClick={() => setTried(true)}>Esvaziar lixeira</OsButton>
-        {tried && <span className="text-xs">Melhor não. Cada bug aqui me ensinou algo.</span>}
+        <OsButton onClick={() => setTried(true)}>{t.emptyTrash}</OsButton>
+        {tried && <span className="text-xs">{t.emptyTrashRefused}</span>}
       </div>
     </div>
   );

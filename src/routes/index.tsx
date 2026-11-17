@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Desktop } from "@/components/os/Desktop";
+import { LanguageProvider } from "@/lib/i18n";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -23,5 +24,9 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
-  return <Desktop />;
+  return (
+    <LanguageProvider>
+      <Desktop />
+    </LanguageProvider>
+  );
 }

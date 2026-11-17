@@ -1,5 +1,6 @@
 import { useRef, type ReactNode } from "react";
 import { Minus, X } from "lucide-react";
+import { useT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { PixelIcon } from "./PixelIcon";
 import type { IconName } from "./pixel-icons";
@@ -36,6 +37,7 @@ export function OsWindow({
   onMove,
   children,
 }: Props) {
+  const t = useT();
   const drag = useRef<{ dx: number; dy: number } | null>(null);
 
   return (
@@ -74,14 +76,14 @@ export function OsWindow({
         onPointerUp={() => (drag.current = null)}
         onPointerCancel={() => (drag.current = null)}
       >
-        <OsButton size="icon" aria-label={`Fechar ${title}`} onClick={onClose}>
+        <OsButton size="icon" aria-label={t.close(title)} onClick={onClose}>
           <X className="h-3 w-3" strokeWidth={3} />
         </OsButton>
         <span className="os-titlebar-label">
           <PixelIcon name={icon} size={16} />
           <span className="truncate">{title}</span>
         </span>
-        <OsButton size="icon" aria-label={`Minimizar ${title}`} onClick={onMinimize}>
+        <OsButton size="icon" aria-label={t.minimize(title)} onClick={onMinimize}>
           <Minus className="h-3 w-3" strokeWidth={3} />
         </OsButton>
       </header>
