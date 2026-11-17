@@ -1,6 +1,6 @@
 import { getPortfolio } from "@/data/portfolio";
 import { getAppText, isBaseApp, type BaseAppId, type WindowId } from "@/components/os/app-registry";
-import type { Lang } from "./lang";
+import type { Lang } from "@/i18n/lang";
 
 export type TerminalResult = { lines: string[]; open?: WindowId; clear?: boolean };
 

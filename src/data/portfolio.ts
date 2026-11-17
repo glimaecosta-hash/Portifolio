@@ -2,7 +2,7 @@
 // Campos com { pt, en } mudam conforme o idioma escolhido no site.
 
 import type { IconName } from "@/components/os/pixel-icons";
-import type { Lang } from "@/lib/lang";
+import type { Lang } from "@/i18n/lang";
 
 /** Um texto em cada idioma. */
 type L<T> = Record<Lang, T>;

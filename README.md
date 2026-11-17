@@ -22,6 +22,7 @@ Este é o meu portfólio pessoal. Em vez de uma página comum, ele simula um des
 - [Tecnologias](#tecnologias)
 - [Como rodar na sua máquina](#como-rodar-na-sua-máquina)
 - [Scripts disponíveis](#scripts-disponíveis)
+- [Publicação (GitHub Pages)](#publicação-github-pages)
 - [Estrutura do projeto](#estrutura-do-projeto)
 - [Como editar o conteúdo](#como-editar-o-conteúdo)
 - [Decisões de arquitetura](#decisões-de-arquitetura)
@@ -92,7 +93,8 @@ As setas ↑ e ↓ navegam no histórico, e há alguns comandos escondidos. Tent
 | --- | --- |
 | Interface | React 19, TypeScript, Tailwind CSS 4 |
 | Framework e build | TanStack Start, TanStack Router, Vite 8 |
-| Componentes | Radix UI, Lucide Icons |
+| Ícones | Lucide Icons e pixel art feita em código |
+| Publicação | GitHub Actions + GitHub Pages |
 | Qualidade | Vitest, Testing Library, ESLint, Prettier |
 
 ---
@@ -136,30 +138,66 @@ O terminal mostra o endereço para abrir no navegador, normalmente `http://local
 
 ---
 
+## Publicação (GitHub Pages)
+
+O site é publicado automaticamente em **https://glimaecosta-hash.github.io/Portifolio/** a cada `git push` na branch `main`.
+
+**Configuração inicial (uma vez só):** no repositório do GitHub, abra **Settings → Pages** e, em **Source**, escolha **GitHub Actions**.
+
+O que acontece a cada push ([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)):
+
+1. Instala as dependências.
+2. Verifica tipos, lint e testes. Se algo falhar, o site não é publicado.
+3. Gera o site como HTML estático, já ajustado para o endereço `/Portifolio/`.
+4. Publica no GitHub Pages.
+
+O andamento aparece na aba **Actions** do repositório. Se o nome do repositório mudar, o endereço muda junto, sem precisar alterar nada no código.
+
+---
+
 ## Estrutura do projeto
 
 ```
+.github/workflows/
+└── deploy.yml                # Publica no GitHub Pages a cada push na main
+
 src/
-├── components/
-│   ├── os/                  # O "sistema operacional"
-│   │   ├── Desktop.tsx      # Área de trabalho e gerenciador de janelas
-│   │   ├── Apps.tsx         # Conteúdo de cada janela
-│   │   ├── app-registry.ts  # Lista de programas: ícone, largura e nome em cada idioma
-│   │   ├── OsWindow.tsx     # A janela (arrastar, focar, minimizar, fechar)
-│   │   ├── BootScreen.tsx   # Tela de inicialização
-│   │   ├── PixelIcon.tsx    # Desenha os ícones em pixel
-│   │   └── pixel-icons.ts   # Os ícones como grades de 16x16
-│   └── ui/                  # Componentes base (Radix UI)
+├── components/os/            # O "sistema operacional"
+│   ├── apps/                 # Uma janela por arquivo
+│   │   ├── AboutApp.tsx      #   sobre_mim.txt
+│   │   ├── ProjectsApp.tsx   #   pasta Projetos e a janela de cada projeto
+│   │   ├── TerminalApp.tsx   #   terminal.exe
+│   │   ├── SkillsApp.tsx     #   habilidades.sys
+│   │   ├── ResumeApp.tsx     #   curriculo.doc
+│   │   ├── ContactApp.tsx    #   contato.exe
+│   │   ├── TrashApp.tsx      #   Lixeira
+│   │   ├── shared.tsx        #   peças comuns (barra de menu, barra de status)
+│   │   └── index.ts          #   exporta todas as janelas
+│   ├── Desktop.tsx           # Área de trabalho e gerenciador de janelas
+│   ├── OsWindow.tsx          # A janela (arrastar, focar, minimizar, fechar)
+│   ├── LanguageToggle.tsx    # Botões PT | EN
+│   ├── BootScreen.tsx        # Tela de inicialização
+│   ├── OsButton.tsx          # Botão no estilo retrô
+│   ├── PixelIcon.tsx         # Desenha os ícones em pixel
+│   ├── pixel-icons.ts        # Os ícones como grades de 16x16
+│   └── app-registry.ts       # Lista de programas: ícone, largura e nome em cada idioma
 ├── data/
-│   └── portfolio.ts         # Todo o conteúdo pessoal, em português e inglês
+│   └── portfolio.ts          # Todo o conteúdo pessoal, em português e inglês
+├── i18n/                     # Português e inglês
+│   ├── index.tsx             # LanguageProvider e os hooks useLang, useT, usePortfolio
+│   ├── lang.ts               # Idiomas disponíveis (pt, en)
+│   └── ui-strings.ts         # Textos da interface (botões, menus) nos dois idiomas
+├── hooks/
+│   ├── use-clock.ts          # Relógio da barra de tarefas
+│   └── use-is-small.ts       # Detecta tela de celular
 ├── lib/
-│   ├── terminal.ts          # Lógica dos comandos do terminal
-│   ├── i18n.tsx             # Idioma escolhido: LanguageProvider, useT, usePortfolio
-│   ├── lang.ts              # Idiomas disponíveis (pt, en)
-│   └── ui-strings.ts        # Textos da interface (botões, menus) nos dois idiomas
-├── routes/                  # Rotas do TanStack Router
-├── test/                    # Testes com Vitest
-└── styles.css               # Tema, cores e estilos retrô
+│   ├── terminal.ts           # Lógica dos comandos do terminal (função pura)
+│   ├── utils.ts              # Utilitário cn() para classes CSS
+│   └── error-*.ts            # Página e captura de erros do servidor
+├── assets/                   # Imagens dos projetos (prints)
+├── routes/                   # Rotas do TanStack Router
+├── test/                     # Testes com Vitest
+└── styles.css                # Tema, cores e estilos retrô
 ```
 
 ---
@@ -183,7 +221,7 @@ summary: { pt: "Texto em português.", en: "Text in English." },
 | Experiência e formação | `experienceData` e `educationData` |
 | Cursos e idiomas | `courses` e `languages` |
 
-Os textos fixos da interface, como botões, menus e mensagens do terminal, ficam em [`src/lib/ui-strings.ts`](src/lib/ui-strings.ts) e [`src/lib/terminal.ts`](src/lib/terminal.ts).
+Os textos fixos da interface, como botões, menus e mensagens do terminal, ficam em [`src/i18n/ui-strings.ts`](src/i18n/ui-strings.ts) e [`src/lib/terminal.ts`](src/lib/terminal.ts).
 
 ### Adicionando um projeto
 

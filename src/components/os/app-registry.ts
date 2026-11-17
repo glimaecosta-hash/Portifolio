@@ -1,5 +1,5 @@
 import { getPortfolio } from "@/data/portfolio";
-import type { Lang } from "@/lib/lang";
+import type { Lang } from "@/i18n/lang";
 import type { IconName } from "./pixel-icons";
 
 export type BaseAppId =

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useT } from "@/lib/i18n";
+import { useT } from "@/i18n";
 
 export function BootScreen({ onDone }: { onDone: () => void }) {
   const t = useT();

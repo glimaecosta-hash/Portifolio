@@ -1,0 +1,80 @@
+# Publica o portfólio no GitHub Pages a cada push na branch main.
+# Endereço final: https://<usuario>.github.io/<nome-do-repositorio>/
+#
+# Antes do primeiro deploy: no GitHub, abra Settings > Pages e, em "Source",
+# escolha "GitHub Actions".
+
+name: Deploy no GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # permite rodar manualmente pela aba Actions
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Só um deploy por vez; um push novo não cancela o que já está publicando.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Verificar e gerar o site
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
+
+      - name: Instalar o Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Verificar tipos (TypeScript)
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Testes
+        run: npm test
+
+      - name: Gerar o site estático
+        run: npm run build
+        env:
+          GITHUB_PAGES: "true"
+          BASE_PATH: /${{ github.event.repository.name }}/
+
+      - name: Preparar arquivos do GitHub Pages
+        run: |
+          # 404.html: qualquer endereço desconhecido cai no próprio portfólio
+          cp .output/public/index.html .output/public/404.html
+          # .nojekyll: entrega os arquivos como estão, sem processamento do Jekyll
+          touch .output/public/.nojekyll
+          # _headers é só para Cloudflare; o GitHub Pages ignora
+          rm -f .output/public/_headers
+
+      - name: Enviar o site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .output/public
+
+  deploy:
+    name: Publicar
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Publicar no GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

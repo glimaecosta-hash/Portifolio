@@ -1,6 +1,6 @@
 import { useRef, type ReactNode } from "react";
 import { Minus, X } from "lucide-react";
-import { useT } from "@/lib/i18n";
+import { useT } from "@/i18n";
 import { cn } from "@/lib/utils";
 import { PixelIcon } from "./PixelIcon";
 import type { IconName } from "./pixel-icons";

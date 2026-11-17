@@ -1,78 +1,34 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useLang, usePortfolio, useT } from "@/lib/i18n";
-import { HTML_LANG, LANGS, type Lang } from "@/lib/lang";
+import { useClock } from "@/hooks/use-clock";
+import { useIsSmall } from "@/hooks/use-is-small";
+import { HTML_LANG, useLang, usePortfolio, useT } from "@/i18n";
 import { cn } from "@/lib/utils";
-import { APPS, DESKTOP_ORDER, getAppText, getWindowMeta, type WindowId } from "./app-registry";
+import {
+  APPS,
+  DESKTOP_ORDER,
+  getAppText,
+  getWindowMeta,
+  isBaseApp,
+  type WindowId,
+} from "./app-registry";
 import {
   AboutApp,
-  ContatoApp,
-  CurriculoApp,
-  LixeiraApp,
+  ContactApp,
   ProjectApp,
   ProjectsApp,
+  ResumeApp,
   SkillsApp,
   TerminalApp,
-} from "./Apps";
+  TrashApp,
+} from "./apps";
 import { BootScreen } from "./BootScreen";
+import { LanguageToggle } from "./LanguageToggle";
 import { OsButton } from "./OsButton";
 import { OsWindow } from "./OsWindow";
 import { PixelIcon, StartLogo } from "./PixelIcon";
 
 type Win = { id: WindowId; x: number; y: number; z: number; minimized: boolean };
 type Phase = "boot" | "on" | "off";
-
-function useIsSmall() {
-  const [small, setSmall] = useState(false);
-  useEffect(() => {
-    const mql = window.matchMedia("(max-width: 767px)");
-    const update = () => setSmall(mql.matches);
-    update();
-    mql.addEventListener("change", update);
-    return () => mql.removeEventListener("change", update);
-  }, []);
-  return small;
-}
-
-function useClock(lang: Lang) {
-  const [time, setTime] = useState("");
-  useEffect(() => {
-    const fmt = () =>
-      setTime(
-        new Date().toLocaleTimeString(HTML_LANG[lang], {
-          hour: "2-digit",
-          minute: "2-digit",
-          timeZone: "America/Sao_Paulo",
-        }),
-      );
-    fmt();
-    const t = setInterval(fmt, 15000);
-    return () => clearInterval(t);
-  }, [lang]);
-  return time;
-}
-
-function LanguageToggle() {
-  const { lang, setLang } = useLang();
-  const t = useT();
-  return (
-    <div role="group" aria-label={t.language} className="flex shrink-0">
-      {LANGS.map((l) => (
-        <OsButton
-          key={l}
-          size="sm"
-          variant={lang === l ? "pressed" : "default"}
-          aria-pressed={lang === l}
-          aria-label={t.languageNames[l]}
-          title={t.languageNames[l]}
-          lang={HTML_LANG[l]}
-          onClick={() => setLang(l)}
-        >
-          {l.toUpperCase()}
-        </OsButton>
-      ))}
-    </div>
-  );
-}
 
 export function Desktop() {
   const { lang } = useLang();
@@ -84,7 +40,7 @@ export function Desktop() {
   const [startOpen, setStartOpen] = useState(false);
   const zRef = useRef(10);
   const isSmall = useIsSmall();
-  const time = useClock(lang);
+  const time = useClock(HTML_LANG[lang]);
 
   const open = useCallback((id: WindowId) => {
     setStartOpen(false);
@@ -93,7 +49,7 @@ export function Desktop() {
       if (prev.some((w) => w.id === id))
         return prev.map((w) => (w.id === id ? { ...w, z, minimized: false } : w));
       const n = prev.length;
-      const width = id in APPS ? APPS[id as keyof typeof APPS].width : 600;
+      const width = isBaseApp(id) ? APPS[id].width : 600;
       const maxX = Math.max(16, window.innerWidth - width - 32);
       const x = Math.min(140 + n * 56, maxX);
       const y = Math.min(24 + n * 40, Math.max(16, window.innerHeight - 420));
@@ -147,11 +103,11 @@ export function Desktop() {
       case "habilidades":
         return <SkillsApp />;
       case "curriculo":
-        return <CurriculoApp />;
+        return <ResumeApp />;
       case "contato":
-        return <ContatoApp />;
+        return <ContactApp />;
       case "lixeira":
-        return <LixeiraApp />;
+        return <TrashApp />;
       default:
         return <ProjectApp slug={id.replace("projeto:", "")} />;
     }
